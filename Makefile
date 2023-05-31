@@ -94,6 +94,8 @@ help:
 		| grep -v / \
 		| sed 's/^/	$(HELP_MSG_PREFIX)make /'
 
+check-program = $(foreach exec,$(1),$(if $(shell PATH="$(PATH)" which $(exec)),,$(error "No $(exec) in PATH")))
+
 # Build rules
 build_core: build_core.android build_core.ios
 
@@ -415,3 +417,18 @@ ifneq (, $(wildcard $(IOS_GOMOBILE_CACHE)))
 	chmod -R u+wx $(IOS_GOMOBILE_CACHE) && rm -rf $(IOS_GOMOBILE_CACHE)
 endif
 	@echo 'Done!'
+
+asdf.install_plugins:
+	$(call check-program, asdf)
+	@echo "Installing asdf plugins..."
+	@set -e; \
+	for PLUGIN in $$(cut -d' ' -f1 .tool-versions | grep "^[^\#]"); do \
+		asdf plugin add $$PLUGIN || [ $$?==2 ] || exit 1; \
+	done
+.PHONY: asdf.install_plugins
+
+asdf.install_tools: asdf.install_plugins
+	$(call check-program, asdf)
+	@echo "Installing asdf tools..."
+	@asdf install
+.PHONY: asdf.install_tools
